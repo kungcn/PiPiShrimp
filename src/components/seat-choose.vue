@@ -15,15 +15,20 @@
             </el-row>
         </div>
         <div class="film-info">
-          <p>影片: 神奇女侠</p>
-          <p>影院: 上海宝山万画影城北上海店</p>
-          <p>影厅: 5号厅</p>
-          <p>场次: 6月4日(周日) 20:20</p>
-          <p>座位: 未选座</p>
-          <p>单价: 33</p>
-          <p>总计: 0</p>
+          <p>影片: {{ movie.name }}</p>
+          <p>影院: {{ movie.hall }}</p>
+          <p>影厅: {{ movie.hnum }}号厅</p>
+          <p>场次: {{ movie.tnum }}</p>
+          <p>座位: 
+              <span :v-if='seats.length == 0'>未选座</span>
+              <el-row :v-if = 'seats.length != 0' v-for="seat in seats">
+                <span>{{seat/10}}排{{seat%10}}座</span>
+              </el-row>
+          </p>
+          <p>单价: {{ movie.per }}</p>
+          <p>总计: {{ total }}</p>
           <el-row type='flex' justify="end" class="choose-btn">
-            <el-button type="primary">确认下单</el-button>
+            <el-button type="primary" @click="confirmHandler">确认下单</el-button>
           </el-row>
         </div>
     </el-card>
@@ -32,6 +37,8 @@
 </template>
 
 <script>
+import Api from '../api'
+
 export default {
   name: 'seat-choose',
   data () {
@@ -39,24 +46,94 @@ export default {
       chosen: false,
       items: [],
       seatNum: 90,
-      isChosen: false,
-      isToChoose: true
+      seats:[],
+      mid: 1,
+      cid: 1,
+      tnum: 1,
+      hnum: 1,
+      movie: {
+        name: '神奇女侠',
+        hall: '上海宝山万画影城北上海店',
+        hnum: 5,
+        tnum: '6月4日(周日) 20:20',
+        per: 33
+      },
+      total: null,
+      ticketNum: null
     }
   },
   mounted() {
     this.init();
   },
+  computed() {
+    ticketNum() {
+      return this.movie.per * this.ticketNum;
+    }
+  }
   methods: {
     init() {
-      for (let i = 0; i < this.seatNum; i++) {
-        this.items.push({
-          isChosen: false,
-          isToChoose: true
+      const vm = this;
+      Api.getSeat(this.mid, this.cid, this.tnum, this.hnum)
+          .then(data => {
+            if (data) {
+              const length = 0;
+              for (let i = 0; i < length; i++) {
+                if (data[i] == '1') {
+                  this.items.push({
+                      isChosen: true,
+                      isToChoose: false,
+                      index: i,
+                      x: parseInt(i/10) + 1,
+                      y: i % 10
+
+                  })
+                }
+                else if (data[i] == '0') {
+                  this.items.push({
+                      isChosen: false,
+                      isToChoose: true,
+                      index: i
+                      x: parseInt(i/10) + 1,
+                      y: i % 10
+                  })
+                }
+              }
+            } else {
+              vm.$message({
+                showClose: true,
+                message: 'fail to login',
+                type: 'warning'
+              }
+          }).catch(err => {
+                vm.$message({
+                  showClose: true,
+                  message: 'error,try again please',
+                  type: 'warning'
+                })
+                console.log(err)
+              })
+          })
+    },
+    chooseHandler(item) {
+      if (item.isChosen != true) {
+          item.isToChoose = !item.isToChoose;
+          if (item.isToChoose == true) {
+            this.ticketNum--;
+            this.seats.splice(item.index, 1);
+          } else {
+            this.ticketNum++;
+            this.seats.push(item.index);
+          }
+      } else {
+        vm.$message({
+          showClose: true,
+          message: 'The seat is booked.',
+          type: 'warning'
         })
       }
     },
-    chooseHandler(item) {
-      item.isToChoose = !item.isToChoose;
+    confirmHandler() {
+      this.seats.split('').join('_');
     }
   }
 }
@@ -84,22 +161,6 @@ export default {
 .seat-group {
   display: inline-block;
 }
-
-/*.empty {
-  background-color: #ffffff;
-
-}
-
-.bought {
-  background-color: #F5655D;
-  border-color: #F5655D;
-}
-
-.book {
-  background-color: #28C66A;
-  border-color: #28C66A;
-}
-*/
 
 .screen {
   box-sizing: border-box;
