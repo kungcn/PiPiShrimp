@@ -62,6 +62,24 @@ let Api = {
 				console.log('error:', response)
 			})
 		})
+	},
+	getSeat(mid, cid, tnum, hnum) {  //  mid 电影ID, cid 影院ID, tnum 场次, hnum 影厅
+		return new Promise((resolve, reject) => {
+			vm.$http.post(ApiUrl + '/psearch', {
+				params: {
+					mid: mid,
+					cid: cid,
+					tnum: tnum,
+					hnum: hnum
+				}
+			}).then(response => {
+				let data = response.body
+				resolve(data)
+			}, response => {
+				reject(response)
+				console.log('error:', response)
+			})
+		})
 	}
 }
 
